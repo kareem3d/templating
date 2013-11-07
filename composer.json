@@ -1,0 +1,23 @@
+{
+    "name": "kareem3d/templating",
+    "description": "",
+    "authors": [
+        {
+            "name": "Kareem Mohamed",
+            "email": "kareem3d.a@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0",
+        "illuminate/support": "4.0.x"
+    },
+    "autoload": {
+        "classmap": [
+            "src/migrations"
+        ],
+        "psr-0": {
+            "Kareem3d\\Templating": "src/"
+        }
+    },
+    "minimum-stability": "dev"
+}
