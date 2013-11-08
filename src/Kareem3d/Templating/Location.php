@@ -23,6 +23,44 @@ class Location {
     }
 
     /**
+     * @param Part $part
+     */
+    public function addPart( Part $part )
+    {
+        $this->parts[] = $part;
+    }
+
+    /**
+     * @param $_partName
+     * @return \Kareem3d\Templating\Part
+     */
+    public function findPart( $_partName )
+    {
+        foreach($this->parts as $part)
+        {
+            if($part->check($_partName))
+
+                return $part;
+        }
+    }
+
+    /**
+     * @param $type
+     * @return string
+     */
+    public function printAssets( $type )
+    {
+        $string = '';
+
+        foreach($this->parts as $part)
+        {
+            $string .= $part->printAssets( $type );
+        }
+
+        return $string;
+    }
+
+    /**
      * @return string
      */
     public function getName()
@@ -46,6 +84,14 @@ class Location {
     public function check($name)
     {
         return $this->name == $this->realName($name);
+    }
+
+    /**
+     * @return array|Part[]
+     */
+    public function getParts()
+    {
+        return $this->parts;
     }
 
     /**

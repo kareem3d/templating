@@ -22,7 +22,7 @@ class TemplatingServiceProvider extends ServiceProvider {
 		$this->package('kareem3d/templating');
 
         // XML Factory the pages and put them in the repository to be used
-        $xmlFactory = new XMLFactory(Config::get('templating::xml_file'));
+        $xmlFactory = XMLFactory::instance(Config::get('templating::xml.pages'), Config::get('templating::xml.assets'));
 
         PageRepository::put($xmlFactory->generatePages());
 	}

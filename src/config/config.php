@@ -2,5 +2,8 @@
 
 return array(
 
-    'xml_file' => app_path('pages.xml')
+    'xml' => array(
+        'pages' => app_path('views/pages.xml'),
+        'assets' => app_path('views/assets.xml'),
+    )
 );

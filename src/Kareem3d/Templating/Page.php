@@ -1,5 +1,7 @@
 <?php namespace Kareem3d\Templating;
 
+use Kareem3d\AssetManager\AssetCollection;
+
 class Page {
 
     /**
@@ -26,6 +28,40 @@ class Page {
     {
         $this->identifier = $identifier;
         $this->template  = $template;
+    }
+
+    /**
+     * @return \Kareem3d\Templating\Template
+     */
+    public function getTemplate()
+    {
+        return $this->template;
+    }
+
+    /**
+     * @param $_partName
+     * @return \Kareem3d\Templating\Part
+     */
+    public function findPart( $_partName )
+    {
+        return $this->template->findPart($_partName);
+    }
+
+    /**
+     * @return AssetCollection[]
+     */
+    public function getAssetCollections()
+    {
+        return $this->template->getAssetCollections();
+    }
+
+    /**
+     * @param Page $page
+     * @return bool
+     */
+    public function same(Page $page)
+    {
+        return $this->check($page->identifier);
     }
 
     /**

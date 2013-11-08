@@ -1,6 +1,7 @@
 <?php namespace Kareem3d\Templating;
 
 use Illuminate\Support\Facades\View;
+use Kareem3d\AssetManager\AssetCollection;
 
 class Template {
 
@@ -15,13 +16,122 @@ class Template {
     protected $locations;
 
     /**
+     * @var \Kareem3d\AssetManager\AssetCollection
+     */
+    protected $assetCollection;
+
+    /**
      * @param $name
      * @param array $locations
+     * @param \Kareem3d\AssetManager\AssetCollection $assetCollection
      */
-    public function __construct($name, $locations = array())
+    public function __construct($name, $locations = array(), AssetCollection $assetCollection = null)
     {
         $this->locations = $locations;
         $this->name      = $this->realName($name);
+        $this->assetCollection = $assetCollection;
+    }
+
+    /**
+     * @return AssetCollection
+     */
+    public function getAssetCollection()
+    {
+        return $this->assetCollection;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAssetCollections()
+    {
+        $assetCollections = array();
+
+        if($assetCollection = $this->getAssetCollection())
+        {
+            $assetCollections[] = $assetCollection;
+        }
+
+        // Get locations parts
+        foreach($this->getLocationsParts() as $parts)
+        {
+            foreach($parts as $part)
+            {
+                if($assetCollection = $part->getAssetCollection())
+                {
+                    $assetCollections[] = $assetCollection;
+                }
+            }
+        }
+
+        return $assetCollections;
+    }
+
+    /**
+     * @param $_partName
+     * @return \Kareem3d\Templating\Part
+     */
+    public function findPart( $_partName )
+    {
+        foreach($this->locations as $location)
+        {
+            if($part = $location->findPart($_partName))
+            {
+                return $part;
+            }
+        }
+    }
+
+    /**
+     * @param string $type
+     * @return string
+     */
+    public function printAssets( $type )
+    {
+        return $this->printTemplateAssets($type) . $this->printLocationsAssets($type);
+    }
+
+    /**
+     * @param $type
+     * @return string
+     */
+    public function printTemplateAssets($type)
+    {
+        if($assetCollection = $this->assetCollection)
+        {
+            return $this->assetCollection->printType( $type );
+        }
+    }
+
+    /**
+     * @param $type
+     * @return string
+     */
+    public function printLocationsAssets( $type )
+    {
+        $string = '';
+
+        foreach($this->locations as $location)
+        {
+            $string .= $location->printAssets( $type );
+        }
+
+        return $string;
+    }
+
+    /**
+     * @return Part[]
+     */
+    public function getLocationsParts()
+    {
+        $parts = array();
+
+        foreach($this->locations as $location)
+        {
+            $parts[] = $location->getParts();
+        }
+
+        return $parts;
     }
 
     /**

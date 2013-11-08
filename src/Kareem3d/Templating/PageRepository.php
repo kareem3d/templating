@@ -32,11 +32,26 @@ class PageRepository {
     }
 
     /**
-     * @return array|Page[]
+     * @return \Kareem3d\Templating\Page[]
      */
     public static function get()
     {
         return static::$pages;
+    }
+
+    /**
+     * @param $name
+     * @return Part
+     */
+    public static function findPart( $name )
+    {
+        foreach(static::get() as $page)
+        {
+            if($part = $page->findPart($name))
+            {
+                return $part;
+            }
+        }
     }
 
     /**

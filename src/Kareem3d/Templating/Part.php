@@ -1,6 +1,8 @@
 <?php namespace Kareem3d\Templating;
 
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\View;
+use Kareem3d\AssetManager\AssetCollection;
 
 class Part {
 
@@ -20,11 +22,48 @@ class Part {
     protected $arguments = array();
 
     /**
-     * @param $name
+     * @var AssetCollection
      */
-    public function __construct($name)
+    protected $assetCollection;
+
+    /**
+     * @param $name
+     * @param \Kareem3d\AssetManager\AssetCollection $assetCollection
+     * @return \Kareem3d\Templating\Part
+     */
+    public function __construct($name, AssetCollection $assetCollection = null)
     {
-       $this->name = $this->realName($name);
+        $this->name = $this->realName($name);
+        $this->assetCollection = $assetCollection;
+    }
+
+    /**
+     * @return AssetCollection
+     */
+    public function getAssetCollection()
+    {
+        return $this->assetCollection;
+    }
+
+    /**
+     * @param $name
+     * @return bool
+     */
+    public function check($name)
+    {
+        return $this->name === $this->realName($name);
+    }
+
+    /**
+     * @param $type
+     * @return string
+     */
+    public function printAssets( $type )
+    {
+        if($assetCollection = $this->assetCollection)
+        {
+            return $assetCollection->printType($type);
+        }
     }
 
     /**

@@ -2,13 +2,20 @@
 
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\URL;
+use Kareem3d\AssetManager\AssetCollection;
+use Kareem3d\AssetManager\Asset;
 
 class XMLFactory {
 
     /**
      * @var \SimpleXMLElement
      */
-    protected $xml;
+    protected $pagesXml;
+
+    /**
+     * @var \SimpleXMLElement
+     */
+    protected $assetsXml;
 
     /**
      * @var array
@@ -16,11 +23,34 @@ class XMLFactory {
     protected $defaultAttributes = array();
 
     /**
-     * @param $xmlFile
+     * @var XMLFactory
      */
-    public function __construct($xmlFile)
+    protected static $instance;
+
+    /**
+     * @param $pagesXmlFile
+     * @param $assetsXmlFile
+     * @return \Kareem3d\Templating\XMLFactory
+     */
+    private function __construct($pagesXmlFile, $assetsXmlFile)
     {
-        $this->xml = simplexml_load_file($xmlFile);
+        $this->pagesXml = simplexml_load_file($pagesXmlFile);
+        $this->assetsXml = simplexml_load_file($assetsXmlFile);
+    }
+
+    /**
+     * @param $pagesXmlFile
+     * @param $assetsXmlFile
+     * @return XMLFactory
+     */
+    public static function instance( $pagesXmlFile = null, $assetsXmlFile = null )
+    {
+        if(! static::$instance)
+        {
+            static::$instance = new static($pagesXmlFile, $assetsXmlFile);
+        }
+
+        return static::$instance;
     }
 
     /**
@@ -30,7 +60,7 @@ class XMLFactory {
     {
         $pages = array();
 
-        foreach($this->xml->page as $page)
+        foreach($this->pagesXml->page as $page)
         {
             // Identifier is either the name of url
             $identifier = $this->string($page, 'name') ?: $this->string($page, 'url');
@@ -42,48 +72,31 @@ class XMLFactory {
     }
 
     /**
-     * @param $_pageName
-     * @param array $args
-     * @return mixed
+     * @param $_identifier
+     * @return \Kareem3d\Templating\Page
      */
-    public function get($_pageName, array $args = array())
+    public function generatePage( $_identifier )
     {
-        $currentTemplate = $this->getCurrentTemplate($_pageName);
-
-        return $currentTemplate ? $currentTemplate->printMe($args) : '';
-    }
-
-    /**
-     * @param $_pageName
-     * @return Template
-     */
-    public function getCurrentTemplate( $_pageName )
-    {
-        foreach($this->xml->page as $page)
+        foreach($this->pagesXml->page as $page)
         {
-            $pageUrl  = $this->string($page, 'url');
-            $pageName = $this->string($page, 'name');
+            // Identifier is either the name of url
+            $identifier = $this->string($page, 'name') ?: $this->string($page, 'url');
 
-            $urlMatch  = $pageUrl && Request::is(str_replace(URL::to(''), '',$pageUrl));
-            $pageMatch = $pageName === $_pageName;
-
-            // If either the url match or given page name match then generate the template from xml and return it.
-            if($urlMatch or $pageMatch)
+            if($_identifier == $identifier)
             {
-                return $this->generateTemplate($page);
+                return new Page($identifier, $this->generateTemplate($page));
             }
         }
     }
-
 
     /**
      * @return \SimpleXMLElement
      */
     public function getDefault()
     {
-        if(property_exists($this->xml, 'default'))
+        if(property_exists($this->pagesXml, 'default'))
         {
-            return $this->xml->default;
+            return $this->pagesXml->default;
         }
     }
 
@@ -92,7 +105,7 @@ class XMLFactory {
      */
     public function hasDefault()
     {
-        return property_exists($this->xml, 'default');
+        return property_exists($this->pagesXml, 'default');
     }
 
     /**
@@ -102,7 +115,7 @@ class XMLFactory {
     {
         if(isset($this->defaultAttributes['locations'])) return $this->defaultAttributes['locations'];
 
-        return $this->defaultAttributes['locations'] = $this->getLocations($this->getDefault());
+        return $this->defaultAttributes['locations'] = $this->generateLocations($this->getDefault());
     }
 
     /**
@@ -121,7 +134,7 @@ class XMLFactory {
      */
     public function generateTemplate( $page )
     {
-        $locations    = $this->getLocations($page);
+        $locations    = $this->generateLocations($page);
         $templateName = $this->string($page, 'template');
 
         // Merge default with the current configurations
@@ -131,8 +144,8 @@ class XMLFactory {
             $templateName = $templateName ?: $this->getDefaultTemplate();
         }
 
-        // Return new template with either the xml template or default template.
-        return new Template($templateName, $locations);
+        // Return new template with either the pagesXml template or default template.
+        return new Template($templateName, $locations, $this->generateAssetCollectionForTemplate( $templateName ));
     }
 
     /**
@@ -158,17 +171,73 @@ class XMLFactory {
      * @param $page
      * @return Location[]
      */
-    protected function getLocations($page)
+    protected function generateLocations($page)
     {
         $locations = array();
 
         foreach($page->children() as $tagName => $value)
         {
+            // Create new location
+            $location = new Location($tagName);
+
+            // Parts are separated by `|` in the pagesXml file
+            $partsPieces = explode('|', $value);
+
+            foreach($partsPieces as $partName)
+            {
+                $location->addPart(new Part($partName, $this->generateAssetCollectionForPart($partName)));
+            }
+
             // Using tag name as key to prevent duplication...
-            $locations[$tagName] = new Location($tagName, Part::separatorFactory((string) $value, '|'));
+            $locations[$tagName] = $location;
         }
 
         return $locations;
     }
 
+    /**
+     * @param $partName
+     * @return \SimpleXMLElement
+     */
+    protected function generateAssetCollectionForPart($partName)
+    {
+        foreach($this->assetsXml->assetCollection as $assetCollection)
+        {
+            if($this->string($assetCollection, 'part') == $partName)
+            {
+                return new AssetCollection($this->generateAssets( $assetCollection ));
+            }
+        }
+    }
+
+    /**
+     * @param $templateName
+     * @return \SimpleXMLElement
+     */
+    protected function generateAssetCollectionForTemplate($templateName)
+    {
+        foreach($this->assetsXml->assetCollection as $assetCollection)
+        {
+            if($this->string($assetCollection, 'template') == $templateName)
+            {
+                return new AssetCollection($this->generateAssets( $assetCollection ));
+            }
+        }
+    }
+
+    /**
+     * @param $assetCollection
+     * @return Asset[]
+     */
+    protected function generateAssets(\SimpleXMLElement $assetCollection)
+    {
+        $assets = array();
+
+        foreach($assetCollection->children() as $tagName => $assetPath)
+        {
+            $assets[] = new Asset(trim($assetPath), strtolower(trim($tagName)));
+        }
+
+        return $assets;
+    }
 }
