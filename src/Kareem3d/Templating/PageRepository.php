@@ -69,4 +69,15 @@ class PageRepository {
         }
     }
 
+    /**
+     * @param string $identifier
+     * @param $args
+     */
+    public static function share($identifier, $args)
+    {
+        if($page = static::find($identifier))
+        {
+            $page->share($args);
+        }
+    }
 }

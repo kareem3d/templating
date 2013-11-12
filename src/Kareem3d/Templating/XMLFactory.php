@@ -1,9 +1,8 @@
 <?php namespace Kareem3d\Templating;
 
-use Illuminate\Support\Facades\Request;
-use Illuminate\Support\Facades\URL;
 use Kareem3d\AssetManager\AssetCollection;
 use Kareem3d\AssetManager\Asset;
+use Kareem3d\Link\Link;
 
 class XMLFactory {
 
@@ -39,6 +38,14 @@ class XMLFactory {
     }
 
     /**
+     * @return XMLFactory
+     */
+    public static function instanceFromConfig()
+    {
+        return static::instance(Config::get('templating::xml.pages'), Config::get('templating::xml.assets'));
+    }
+
+    /**
      * @param $pagesXmlFile
      * @param $assetsXmlFile
      * @return XMLFactory
@@ -54,21 +61,35 @@ class XMLFactory {
     }
 
     /**
-     * @return Page[]
+     * @param $_pageName
+     * @param $_pageUrl
+     * @return Page
      */
-    public function generatePages()
+    public function pushPageToRepositories( $_pageName, $_pageUrl )
     {
-        $pages = array();
-
         foreach($this->pagesXml->page as $page)
         {
             // Identifier is either the name of url
             $identifier = $this->string($page, 'name') ?: $this->string($page, 'url');
 
-            $pages[] = new Page($identifier, $this->generateTemplate($page));
-        }
+            // Match either the page name or page url...
+            if($identifier == $_pageName || $identifier == $_pageUrl)
+            {
+                $page = new Page($_pageName, $this->generateTemplate($page));
 
-        return $pages;
+                PageRepository::add($page);
+
+                return $page;
+            }
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function pushToRepositories()
+    {
+        PageRepository::put($this->generatePages());
     }
 
     /**
@@ -87,6 +108,24 @@ class XMLFactory {
                 return new Page($identifier, $this->generateTemplate($page));
             }
         }
+    }
+
+    /**
+     * @return Page[]
+     */
+    public function generatePages()
+    {
+        $pages = array();
+
+        foreach($this->pagesXml->page as $page)
+        {
+            // Identifier is either the name of url
+            $identifier = $this->string($page, 'name') ?: $this->string($page, 'url');
+
+            $pages[] = new Page($identifier, $this->generateTemplate($page));
+        }
+
+        return $pages;
     }
 
     /**
@@ -185,7 +224,11 @@ class XMLFactory {
 
             foreach($partsPieces as $partName)
             {
-                $location->addPart(new Part($partName, $this->generateAssetCollectionForPart($partName)));
+                $part = new Part($partName, $this->generateAssetCollectionForPart($partName));
+
+                $location->addPart($part);
+
+                PartRepository::add($part);
             }
 
             // Using tag name as key to prevent duplication...

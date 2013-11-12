@@ -15,11 +15,6 @@ class Page {
     protected $template;
 
     /**
-     * @var Page
-     */
-    protected static $default;
-
-    /**
      * @param $identifier
      * @param Template $template
      * @return \Kareem3d\Templating\Page
@@ -28,6 +23,22 @@ class Page {
     {
         $this->identifier = $identifier;
         $this->template  = $template;
+    }
+
+    /**
+     * @return string
+     */
+    public function getIdentifier()
+    {
+        return $this->identifier;
+    }
+
+    /**
+     * @param $args
+     */
+    public function share( $args )
+    {
+        $this->template->share($args);
     }
 
     /**

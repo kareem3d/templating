@@ -10,7 +10,8 @@
     "require": {
         "php": ">=5.3.0",
         "illuminate/support": "4.0.x",
-        "kareem3d/asset-manager": "dev-master"
+        "kareem3d/asset-manager": "dev-master",
+        "kareem3d/link": "dev-master"
     },
     "autoload": {
         "classmap": [

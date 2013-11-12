@@ -96,15 +96,16 @@ class Location {
 
     /**
      * @param string $separator
+     * @param array $args
      * @return string
      */
-    public function printParts( $separator = '' )
+    public function printParts($separator = '', $args = array())
     {
         $string = '';
 
         foreach($this->parts as $part) {
 
-            $string .= $part->printMe() . $separator;
+            $string .= $part->printMe( $args ) . $separator;
         }
 
         return rtrim($string, $separator);

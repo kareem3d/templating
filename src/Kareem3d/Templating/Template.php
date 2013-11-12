@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\View;
 use Kareem3d\AssetManager\AssetCollection;
 
-class Template {
+class Template extends Viewable {
 
     /**
      * @var string
@@ -16,28 +16,19 @@ class Template {
     protected $locations;
 
     /**
-     * @var \Kareem3d\AssetManager\AssetCollection
-     */
-    protected $assetCollection;
-
-    /**
      * @param $name
      * @param array $locations
      * @param \Kareem3d\AssetManager\AssetCollection $assetCollection
+     * @return \Kareem3d\Templating\Template
      */
     public function __construct($name, $locations = array(), AssetCollection $assetCollection = null)
     {
         $this->locations = $locations;
         $this->name      = $this->realName($name);
         $this->assetCollection = $assetCollection;
-    }
 
-    /**
-     * @return AssetCollection
-     */
-    public function getAssetCollection()
-    {
-        return $this->assetCollection;
+        // Share template argument
+        $this->addArgument('template', $this);
     }
 
     /**
@@ -68,21 +59,6 @@ class Template {
     }
 
     /**
-     * @param $_partName
-     * @return \Kareem3d\Templating\Part
-     */
-    public function findPart( $_partName )
-    {
-        foreach($this->locations as $location)
-        {
-            if($part = $location->findPart($_partName))
-            {
-                return $part;
-            }
-        }
-    }
-
-    /**
      * @param string $type
      * @return string
      */
@@ -95,7 +71,7 @@ class Template {
      * @param $type
      * @return string
      */
-    public function printTemplateAssets($type)
+    protected function printTemplateAssets($type)
     {
         if($assetCollection = $this->assetCollection)
         {
@@ -107,7 +83,7 @@ class Template {
      * @param $type
      * @return string
      */
-    public function printLocationsAssets( $type )
+    protected function printLocationsAssets( $type )
     {
         $string = '';
 
@@ -117,6 +93,21 @@ class Template {
         }
 
         return $string;
+    }
+
+    /**
+     * @param $_partName
+     * @return \Kareem3d\Templating\Part
+     */
+    public function findPart( $_partName )
+    {
+        foreach($this->locations as $location)
+        {
+            if($part = $location->findPart($_partName))
+            {
+                return $part;
+            }
+        }
     }
 
     /**
@@ -165,29 +156,6 @@ class Template {
     }
 
     /**
-     * @param array $args
-     * @return mixed
-     */
-    public function printMe(array $args = array())
-    {
-        // Share arguments for parts
-        Part::share($args);
-
-        return $this->getView($args)->__toString();
-    }
-
-    /**
-     * @param array $args
-     * @return mixed
-     */
-    public function getView(array $args = array())
-    {
-        $args['template'] = $this;
-
-        return View::make($this->getViewName(), $args);
-    }
-
-    /**
      * @return string
      */
     public function getViewName()
@@ -203,8 +171,9 @@ class Template {
     public function printLocation( $location, $separator = '' )
     {
         if($location = $this->findLocation($location))
-
-            return $location->printParts( $separator );
+        {
+            return $location->printParts( $separator, $this->getArguments() );
+        }
     }
 
     /**
@@ -220,5 +189,4 @@ class Template {
             if($location->check($locationName)) return $location;
         }
     }
-
 }

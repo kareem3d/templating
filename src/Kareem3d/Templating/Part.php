@@ -4,27 +4,12 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\View;
 use Kareem3d\AssetManager\AssetCollection;
 
-class Part {
+class Part extends Viewable {
 
     /**
      * @var string
      */
     protected $name;
-
-    /**
-     * @var array
-     */
-    protected static $sharedArgs = array();
-
-    /**
-     * @var array
-     */
-    protected $arguments = array();
-
-    /**
-     * @var AssetCollection
-     */
-    protected $assetCollection;
 
     /**
      * @param $name
@@ -38,11 +23,20 @@ class Part {
     }
 
     /**
-     * @return AssetCollection
+     * @return string
      */
-    public function getAssetCollection()
+    public function getName()
     {
-        return $this->assetCollection;
+        return $this->name;
+    }
+
+    /**
+     * @param $name
+     * @return string
+     */
+    protected function realName( $name )
+    {
+        return strtolower(trim($name));
     }
 
     /**
@@ -67,87 +61,14 @@ class Part {
     }
 
     /**
-     * @param $args
-     */
-    public static function share(array $args)
-    {
-        static::$sharedArgs = array_merge(static::$sharedArgs, $args);
-    }
-
-    /**
-     * @param $string
-     * @param string $separator
-     * @return array
-     */
-    public static function separatorFactory( $string, $separator = ',' ) {
-
-        $partsNames = explode($separator, $string);
-
-        $parts = array();
-
-        foreach($partsNames as $partName)
-        {
-            if($partName) $parts[] = new static($partName);
-        }
-
-        return $parts;
-    }
-
-    /**
-     * @param array $arguments
-     */
-    public function setArguments(array $arguments)
-    {
-        $this->arguments = $arguments;
-    }
-
-    /**
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * @param $name
-     * @return string
-     */
-    protected function realName( $name )
-    {
-        return strtolower(trim($name));
-    }
-
-    /**
-     * @return mixed
-     */
-    public function printMe()
-    {
-        return $this->getView()->__toString();
-    }
-
-    /**
-     * @return array
-     */
-    public function getArguments()
-    {
-        return array_merge(static::$sharedArgs, $this->arguments);
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getView()
-    {
-        return View::make($this->getViewName(), $this->getArguments());
-    }
-
-    /**
      * @return string
      */
     public function getViewName()
     {
-        return 'parts.' . $this->name;
-    }
+        preg_match('#\((.*?)\)#', $this->name, $between_brackets);
 
+        $name = empty($between_brackets) ? $this->name : str_replace($between_brackets[0], '', $this->name);
+
+        return 'parts.' . $name;
+    }
 }
